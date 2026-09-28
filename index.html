@@ -10547,8 +10547,10 @@ const 시작질문 = () => [...설비질문(), ...전체칸().filter(f=>!완료�
 // 🔴 유실(비가동)은 코드 숫자 대신 **버튼 하나**로 — 유실코드·유실시간·유실내용 세 칸을 한 질문으로 묶는다.
 //    비고 883건을 세어 보니 절반이 '청소·정비 / 원단 대기 / 교육 / 잡무' 같은 비가동 사유였다. 시트엔 그 칸이
 //    이미 있는데 현장이 코드 대신 비고에 글로 쓰고 있었다. 버튼이면 코드로 들어간다.
-// ⚠️ 코드 번호는 시트의 비가동 열 순서(설비고장 1 … 기타 9)로 **추정**한 것. 실제 코드표를 받으면 여기만 고친다.
-const 유실사유 = [['1','고장'],['2','치공구'],['3','인원'],['4','자재'],['5','소모품'],['6','교육'],['7','품질'],['8','지원'],['9','청소'],['9','기타']];
+// 코드는 **실제 실적 시트에서 센 것**(2026-09-28): 9/기타 142건 · 8/청소,파지 40 · 1/설비고장 30 · 6/교육,회의 10 · 7/품질 3 · 2/치공구 3 · 4/자재 2.
+//    (전에는 '청소=9, 8=지원' 으로 추정해 뒀는데 둘 다 틀렸다. 버튼말은 짧게, 유실내용 칸엔 시트 표기를 그대로 쓴다.)
+const 유실사유 = [['1','고장','설비고장'],['2','치공구','치공구이상'],['3','인원','인원부족'],['4','자재','자재결품'],['5','소모품','소모품교체'],
+                  ['6','교육','교육/회의'],['7','품질','품질문제'],['8','청소','청소,파지'],['9','기타','기타']];
 function 완료질문(j){
   if(j&&j.잡무) return [{name:'비고', kind:'text', key:'비고'}];
   const 칸 = 전체칸().filter(f=>완료칸(f.name));
@@ -10763,16 +10765,16 @@ let 숫자입력='';
 $('qbody').addEventListener('click',e=>{
   const f=S.단계[S.i];
   const fr=e.target.closest('[data-free]'); if(fr){ S.직접=true; 질문그리기(); return; }
-  const ls=e.target.closest('[data-loss]'); if(ls){ const [c,n]=유실사유[+ls.dataset.loss]; S.유실선택={코드:c,이름:n}; 유실그리기(); return; }
+  const ls=e.target.closest('[data-loss]'); if(ls){ const [c,n,w]=유실사유[+ls.dataset.loss]; S.유실선택={코드:c,이름:n,시트:w}; 유실그리기(); return; }
   const ld=e.target.closest('[data-lossdel]'); if(ld){ S.값.유실.splice(+ld.dataset.lossdel,1); 유실그리기(); return; }
   const p=e.target.closest('[data-pick]'); if(p){ S.값[K(f)]=p.dataset.pick;
     if(S.모드==='시작'&&f.name==='설비명'){ const k=같은설비진행중(p.dataset.pick); if(k>=0){ document.body.classList.remove('step'); 충돌묻기(S.값.오더번호,k); return; } }
     다음(); return; }
   const b=e.target.closest('#numpad button'); if(b){
     if(b.classList.contains('ok')){
-      if(f.kind==='loss'){ if(숫자입력!==''){ (S.값.유실=S.값.유실||[]).push({코드:S.유실선택.코드,이름:S.유실선택.이름,분:숫자입력}); } S.유실선택=null; 유실그리기(); return; }
+      if(f.kind==='loss'){ if(숫자입력!==''){ (S.값.유실=S.값.유실||[]).push({코드:S.유실선택.코드,이름:S.유실선택.이름,시트:S.유실선택.시트,분:숫자입력}); } S.유실선택=null; 유실그리기(); return; }
       if(숫자입력!=='') S.값[K(f)]=숫자입력; else if(!S.값[K(f)]&&S.모드==='시작'&&S.유지[K(f)]!=null) S.값[K(f)]=S.유지[K(f)]; 다음(); return; }
-    if(b.classList.contains('del')) 숫자입력=숫자입력.slice(0,-1);
+    if(b.classList.contains('del')){ if(숫자입력===''&&S.값[K(f)]!=null) 숫자입력=String(S.값[K(f)]); 숫자입력=숫자입력.slice(0,-1); }
     else if(b.classList.contains('dot')){ if(!숫자입력.includes('.')) 숫자입력=(숫자입력||'0')+'.'; }
     else 숫자입력=(숫자입력+b.textContent).slice(0,8);
     const nv=$('numval'); nv.textContent=숫자입력||'0'; nv.className=숫자입력?'':'empty'; return; }
@@ -10806,7 +10808,7 @@ document.addEventListener('keydown',e=>{
   if($('numpad')){
     if(e.key==='.'){ if(!숫자입력.includes('.')){ 숫자입력=(숫자입력||'0')+'.'; $('numval').textContent=숫자입력; } e.preventDefault(); }
     else if(/^[0-9]$/.test(e.key)){ 숫자입력=(숫자입력+e.key).slice(0,8); $('numval').textContent=숫자입력; $('numval').className=''; e.preventDefault(); }
-    else if(e.key==='Backspace'){ 숫자입력=숫자입력.slice(0,-1); $('numval').textContent=숫자입력||'0'; $('numval').className=숫자입력?'':'empty'; e.preventDefault(); }
+    else if(e.key==='Backspace'){ if(숫자입력===''&&S.값[K(f)]!=null) 숫자입력=String(S.값[K(f)]); 숫자입력=숫자입력.slice(0,-1); $('numval').textContent=숫자입력||'0'; $('numval').className=숫자입력?'':'empty'; e.preventDefault(); }
     else if(e.key==='Enter'){ document.querySelector('#numpad .ok').click(); e.preventDefault(); }
   } else if(f.kind==='search'&&e.key==='Enter'){ const first=document.querySelector('#srchlist [data-pick]'); if(first) first.click(); e.preventDefault(); }
   if(e.key==='Escape') 이전();
@@ -10855,7 +10857,7 @@ function 저장(이어서){
   const 유실=S.값.유실||[];
   const 행={일자:j.일자,근무구분:S.근무,설비명:S.값.설비명||S.설비목록[0],작업자:S.작업자,오더번호:ids[0],시작시간:j.시작HHMM,종료시간:t.hhmm,_공정:S.공정,_친시각:t.hm,_잡무:!!j.잡무,_동시:ids.slice(1)};
   전체칸().forEach(f=>{ if(유실칸(f.name)) return; if(S.값[f.name]!=null&&S.값[f.name]!=='') 행[f.name]=S.값[f.name]; });
-  if(유실.length){ 행.유실코드=유실.map(x=>x.코드).join(','); 행['유실시간 (분)']=유실.reduce((a,x)=>a+(+x.분||0),0); 행.유실내용=유실.map(x=>x.이름).join(','); }
+  if(유실.length){ 행.유실코드=유실.map(x=>x.코드).join(','); 행['유실시간 (분)']=유실.reduce((a,x)=>a+(+x.분||0),0); 행.유실내용=유실.map(x=>x.시트||x.이름).join(','); }
   if(ids.length>1&&!String(행.비고||'').startsWith('동시작업 ')){ const 비고=행.비고||''; 행.비고='동시작업 '+ids.slice(1).join(', ')+(비고?' · '+비고:''); }
   행._id=고유id(); 행._sent=false;
   S.기록.unshift(행);
