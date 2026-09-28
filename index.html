@@ -80,7 +80,12 @@
   #q{flex:1;min-height:0;display:none;flex-direction:column;padding:18px 26px 22px}
   body.step #q{display:flex}
   #qhead{display:flex;align-items:center;gap:16px;margin-bottom:10px}
-  #qorder{font-size:19px;font-weight:800;font-variant-numeric:tabular-nums}
+  #qorder{font-size:30px;font-weight:900;font-variant-numeric:tabular-nums;line-height:1.15}
+  /* 오더번호 아래 시작 → 종료. 누르면 고쳐진다 */
+  #qtime{display:flex;align-items:center;gap:12px;margin-top:6px}
+  #qtime b{font-size:26px;font-weight:900;padding:4px 14px;border-radius:12px;background:var(--pick);color:var(--blue);font-variant-numeric:tabular-nums}
+  #qtime b:active{background:var(--blue);color:#fff}
+  #qtime i{font-size:20px;color:var(--sub);font-style:normal}
   #qorder small{font-weight:700;color:var(--sub);margin-left:8px;font-size:15px}
   #qprog{margin-left:auto;font-size:15px;font-weight:800;color:var(--faint)}
   #qbar{height:6px;border-radius:3px;background:#E3E8EE;margin-bottom:18px;overflow:hidden}
@@ -230,7 +235,8 @@
     body.step #right,body.step #scan{display:none}
     #q{display:none;min-height:calc(100vh - 52px);min-height:calc(100dvh - 52px);padding:12px 12px 14px}
     body.step #q{display:flex}
-    #qorder{font-size:15px;line-height:1.3} #qorder small{display:block;margin:2px 0 0;font-size:12.5px} .phase{margin-left:0}
+    #qorder{font-size:24px;line-height:1.2} #qorder small{display:block;margin:2px 0 0;font-size:12.5px} .phase{margin-left:0}
+    #qtime{gap:8px;margin-top:4px} #qtime b{font-size:21px;padding:3px 10px} #qtime i{font-size:16px}
     #qbar{margin-bottom:12px}
     #qtitle{font-size:26px} #qtitle small{font-size:14px} #qhint{font-size:14px;margin-bottom:10px}
     .grid{gap:10px} .grid.c3,.grid.c4,.grid.c5{grid-template-columns:repeat(2,1fr)}
@@ -10700,7 +10706,11 @@ function 머리(){
   const ids=S.값.오더들||[];
   const 제목 = S.모드==='잡무선택' ? 'QR 없음' : (S.값.잡무 ? S.값.오더번호 : (ids[0]||'')+(ids.length>1?' <b>+'+(ids.length-1)+'</b>':''));
   const 표 = {시작:'시작', 완료:'완료', 수정:'수정', 잡무선택:'잡무'}[S.모드]||'';
-  $('qorder').innerHTML=제목+'<span class="phase'+(S.모드==='완료'?' done':'')+'">'+표+'</span>';
+  // 🔴 오더번호는 크게, 그 아래 시작·종료 시각(유저 2026-09-28). 시각을 누르면 바로 숫자패드로 고친다.
+  const ti=S.단계.findIndex(f=>K(f)==='시작시간'), to=S.단계.findIndex(f=>K(f)==='종료시간');
+  const 시각 = (S.모드==='완료'||S.모드==='수정') ? '<div id="qtime">'
+      +'<b data-go="'+ti+'">'+esc(S.값.시작시간||'--')+'</b><i>→</i><b data-go="'+to+'">'+esc(S.값.종료시간||'--')+'</b></div>' : '';
+  $('qorder').innerHTML=제목+'<span class="phase'+(S.모드==='완료'?' done':'')+'">'+표+'</span>'+시각;
 }
 function 질문그리기(){
   머리(); const n=S.단계.length;
@@ -10796,6 +10806,8 @@ $('qbody').addEventListener('click',e=>{
     const nv=$('numval'); nv.textContent=숫자입력||'0'; nv.className=숫자입력?'':'empty'; return; }
   const r=e.target.closest('[data-go]'); if(r){ S.고침=true; S.i=+r.dataset.go; 질문그리기(); }
 });
+$('qorder').addEventListener('click',e=>{ const r=e.target.closest('[data-go]'); if(!r||+r.dataset.go<0) return;
+  S.고침=true; S.i=+r.dataset.go; 질문그리기(); });
 $('qbody').addEventListener('input',e=>{ const f=S.단계[S.i]; if(!f) return;
   if(e.target.id==='srchin') 검색그리기(f,e.target.value,S.유지[K(f)]);
   if(e.target.id==='txt') S.값[K(f)]=e.target.value; });
