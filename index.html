@@ -10501,7 +10501,9 @@ function 물어보기(msg, 예='확인', 위험=false){
 }
 
 // ── 저장(영속) — 진행 중인 일은 몇 시간을 산다 ─────────────────────────
-const KEY='실적단말기';
+// 🔴 실사용·구경용(/demo)·DK 데모(/mes-demo)는 **같은 주소(github.io) 아래라 폰 저장소를 같이 쓴다**.
+//    이름을 안 나누면 구경용에서 저장한 기록이 실사용 앱 목록에 섞여 시트로 나간다(2026-10-21 발견).
+const KEY='실적단말기'+(window.MES데모?'.mes':window.시연?'.시연':'');
 function 보관(){ try{ localStorage.setItem(KEY, JSON.stringify({날짜:이제().iso, 공정:S.공정, 설비목록:S.설비목록, 작업자:S.작업자, 근무:S.근무,
   유지:S.유지, 기록:S.기록, 진행중:S.진행중, 삭제대기:S.삭제대기})); }catch(e){} }
 function 복원(){ try{ const j=JSON.parse(localStorage.getItem(KEY)||'null'); if(!j) return false;
@@ -10694,7 +10696,7 @@ $('addNo').onclick=추가닫기;
 function 시작시작(id){
   S.모드='시작'; S.현재=null;
   S.값={}; Object.keys(S.유지).forEach(k=>S.값[k]=S.유지[k]);
-  S.값.오더번호=id; S.값.오더들=[id]; S.시작시각=Date.now();
+  S.값.오더번호=id; S.값.오더들=[id]; S.값.시작시간=이제().hhmm; S.시작시각=Date.now();   // 시작 시각도 자동 + 눌러서 수정
   if(S.설비목록.length===1){ S.값.설비명=S.설비목록[0];
     const k=같은설비진행중(S.값.설비명); if(k>=0){ 충돌묻기(id,k); return; } }
   S.단계=시작질문(); S.i=0; document.body.classList.add('step'); 질문그리기();
@@ -10726,7 +10728,8 @@ function 머리(){
   // 🔴 오더번호는 크게, 그 아래 시작·종료 시각(유저 2026-09-28). 시각을 누르면 바로 숫자패드로 고친다.
   const ti=S.단계.findIndex(f=>K(f)==='시작시간'), to=S.단계.findIndex(f=>K(f)==='종료시간');
   const 시각 = (S.모드==='완료'||S.모드==='수정') ? '<div id="qtime">'
-      +'<b data-go="'+ti+'">'+esc(S.값.시작시간||'--')+'</b><i>→</i><b data-go="'+to+'">'+esc(S.값.종료시간||'--')+'</b></div>' : '';
+      +'<b data-go="'+ti+'">'+esc(S.값.시작시간||'--')+'</b><i>→</i><b data-go="'+to+'">'+esc(S.값.종료시간||'--')+'</b></div>'
+    : S.모드==='시작' ? '<div id="qtime"><b data-go="'+ti+'">'+esc(S.값.시작시간||'--')+'</b><i>→</i></div>' : '';
   $('qorder').innerHTML=제목+'<span class="phase'+(S.모드==='완료'?' done':'')+'">'+표+'</span>'+시각;
 }
 function 질문그리기(){
@@ -10795,7 +10798,7 @@ async function 이전(){ S.직접=false; S.유실선택=null;
   if(S.i>=S.단계.length){ S.i=S.단계.length-1; 질문그리기(); return; }
   if(S.i<=0){
     if(S.모드==='완료'){ S.다음시작=null; 스캔화면(); toast('취소'); return; }
-    if(Object.keys(S.값).some(k=>!['오더번호','오더들','설비명','잡무'].includes(k)&&S.값[k]!=null)&&!(await 물어보기('취소?','취소',true))) return;
+    if(Object.keys(S.값).some(k=>!['오더번호','오더들','설비명','잡무','시작시간'].includes(k)&&!k.startsWith('_')&&S.값[k]!=null)&&!(await 물어보기('취소?','취소',true))) return;
     스캔화면(); return; }
   S.i--; 질문그리기(); }
 function 잡무시작(name){
@@ -10866,9 +10869,11 @@ document.addEventListener('keydown',e=>{
 // ── 확인 ────────────────────────────────────────────────────────────────
 const 유실요약 = l => (l||[]).map(x=>x.이름+' '+x.분).join(', ');
 function 확인화면(){
-  머리(); S.고침=false; S.직접=false; S.유실선택=null; document.body.classList.remove('kbd'); $('qprog').textContent=''; $('qbar').firstElementChild.style.width='100%';
+  S.고침=false; S.직접=false; S.유실선택=null; document.body.classList.remove('kbd'); $('qprog').textContent=''; $('qbar').firstElementChild.style.width='100%';
   const 시작 = S.모드==='시작';
   if(S.모드==='완료') S.단계=[...(S.값.잡무?[]:[...설비질문(), ...전체칸().filter(f=>!완료칸(f.name))]), ...완료질문(S.진행중[S.현재]), ...시간칸()];  // 시작 때 칸·시각도 같이 보고 고친다
+  if(시작&&!S.단계.some(f=>K(f)==='시작시간')) S.단계=[...S.단계, 시간칸()[0]];   // 시작 시각 줄(눌러서 수정)
+  머리();
   $('qtitle').textContent=시작?'시작?':(S.모드==='수정'?'수정':'저장?');
   $('qhint').textContent='';
   const ids=S.값.오더들||[];
@@ -10887,7 +10892,8 @@ function 확인화면(){
 function 저장(이어서){
   const t=이제();
   if(S.모드==='시작'){
-    const j={오더번호:S.값.오더들[0], 오더들:S.값.오더들.slice(), 공정:S.공정, 값:Object.assign({},S.값), 시작:t.hm, 시작HHMM:t.hhmm, 일자:t.iso};
+    const 시작HHMM=S.값.시작시간||t.hhmm;
+    const j={오더번호:S.값.오더들[0], 오더들:S.값.오더들.slice(), 공정:S.공정, 값:Object.assign({},S.값), 시작:String(시작HHMM).replace(/(\d+)(\d\d)$/,(m,h,mm)=>h.padStart(2,'0')+':'+mm), 시작HHMM, 일자:t.iso};
     delete j.값.오더들; delete j.값.시작시간; delete j.값.종료시간;
     S.유지={}; S.단계.forEach(f=>{ if(유지대상(f.name)&&S.값[K(f)]!=null) S.유지[K(f)]=S.값[K(f)]; });
     S.진행중.push(j); 보관();
@@ -10923,7 +10929,8 @@ function 저장(이어서){
 //    · 못 보낸 건은 폰에 남고 60초마다·다시 켤 때·인터넷 붙을 때 재전송. 같은 _id 는 시트가 한 번만 받는다.
 //    · 수정은 op:'update', 삭제는 op:'delete' — 시트에서 그 줄을 고치거나 지운다.
 const 고유id = () => Date.now().toString(36)+Math.random().toString(36).slice(2,8);
-const 전송주소 = () => { try{ return localStorage.getItem('실적단말기.webapp')||DATA.webapp||''; }catch(e){ return DATA.webapp||''; } };
+const 전송주소 = () => { if(window.시연||window.MES데모) return '';   // 시연판은 어떤 경우에도 안 보낸다(저장소에 남은 주소가 있어도)
+  try{ return localStorage.getItem('실적단말기.webapp')||DATA.webapp||''; }catch(e){ return DATA.webapp||''; } };
 let 전송중=false;
 async function 전송(){
   const url=전송주소(); 미전송표시();
