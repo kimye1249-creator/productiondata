@@ -13445,8 +13445,8 @@ const css = `
 #mesBar .sp{flex:1}
 #mesBar .mb{border:1px solid #4A5562;background:transparent;color:#fff;font-weight:800;font-size:14px;padding:6px 12px;border-radius:8px;white-space:nowrap}
 #mesBar .mb.hi{background:#fff;color:var(--ink);border-color:#fff}
-#main{height:calc(100% - 112px)}
-#mes{position:fixed;left:0;right:0;top:112px;bottom:0;background:var(--bg);z-index:60;display:none;flex-direction:column}
+#main{height:calc(100% - 152px)}
+#mes{position:fixed;left:0;right:0;top:152px;bottom:0;background:var(--bg);z-index:60;display:none;flex-direction:column}
 #mes.on{display:flex}
 #mes .mh{display:flex;align-items:center;gap:14px;padding:18px 28px 0}
 #mes .ms{font-size:14px;font-weight:900;color:#fff;background:var(--ink);border-radius:8px;padding:4px 10px;font-variant-numeric:tabular-nums}
@@ -13523,7 +13523,7 @@ const css = `
 #mes .fhint{align-self:center;margin-left:auto;font-size:16px;font-weight:800;color:var(--warn)} #mes .fhint+.go{margin-left:12px}
 .labs{display:grid;gap:14px} .labs.n2{grid-template-columns:1fr 1fr} .labs.n2 .lab .lqr,.labs.n2 .lab .lqr svg{width:92px;height:92px}
 /* QR 꺼내기(시연 도우미) */
-#mesQRp{position:fixed;top:112px;right:0;bottom:0;width:420px;background:#fff;border-left:1px solid var(--line);box-shadow:-10px 0 30px rgba(0,0,0,.12);z-index:80;display:none;flex-direction:column}
+#mesQRp{position:fixed;top:152px;right:0;bottom:0;width:420px;background:#fff;border-left:1px solid var(--line);box-shadow:-10px 0 30px rgba(0,0,0,.12);z-index:80;display:none;flex-direction:column}
 #mesQRp.on{display:flex}
 #mesQRp .ph{display:flex;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line)}
 #mesQRp .ph h3{margin:0;font-size:19px;font-weight:900;flex:1}
@@ -13549,6 +13549,45 @@ const css = `
 #mesXL th.x,#mesXL td.x{background:#FCEFE3;color:var(--warn);font-weight:800}
 #mesXL .xt{display:inline-flex;gap:4px;margin-left:10px;vertical-align:middle} #mesXL .xt button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:4px 10px;font-size:13px;font-weight:800} #mesXL .xt button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
 #scanHint{font-size:18px;font-weight:800;color:var(--sub);margin-bottom:-6px}
+/* 단계 띠(40px)가 생긴 만큼 데모 화면 머리·여백·아래 버튼을 줄인다 — 라벨 2장 화면이 1280×800 에 들어가게(35px 넘쳤다) */
+@media (min-width:901px){
+  #mes .mh{padding:10px 28px 0} #mes h2{font-size:26px}
+  #mes .mbd{padding:12px 28px}
+  #mes .mf{padding:10px 28px 12px} #mes .mf .go{height:64px} #mes .mf .nav{height:64px}
+  #mes .mpad.sm button{height:52px} #mes .step.sm button{width:52px;height:52px}
+  .lab .lqr,.lab .lqr svg{width:96px;height:96px}
+}
+/* 단계 띠 — 지금 있는 단계에 불. 누르면 그 화면으로 */
+#mesSteps{display:flex;align-items:center;gap:4px;height:40px;padding:0 14px;background:#fff;border-bottom:1px solid var(--line);overflow-x:auto}
+#mesSteps button{flex:none;display:flex;align-items:center;gap:6px;border:1px solid transparent;background:transparent;border-radius:8px;padding:4px 9px;font-size:13px;font-weight:800;color:var(--faint);white-space:nowrap}
+#mesSteps button b{font-size:11px;font-weight:900;padding:1px 6px;border-radius:5px;background:#EEF1F4;color:var(--sub);font-variant-numeric:tabular-nums}
+#mesSteps button.on{background:var(--blue);color:#fff} #mesSteps button.on b{background:#fff;color:var(--blue)}
+#mesSteps button.next{border-color:#BBD0F0;color:var(--blue)}
+#mesSteps i{font-style:normal;color:#C8CFD8;flex:none}
+#mesSteps .grp{flex:none;font-size:11px;font-weight:900;color:var(--faint);margin:0 2px 0 8px}
+/* 흐름 안내 화면 */
+#mesFlow .box{width:min(1120px,100%);max-height:94vh;overflow:auto;display:flex;gap:28px;padding:26px 30px}
+#mesFlow .fl{flex:1;min-width:0}
+#mesFlow h3{margin:0 0 4px;font-size:24px;font-weight:900}
+#mesFlow .sub{font-size:15px;color:var(--sub);font-weight:700;margin-bottom:14px}
+#mesFlow .row{display:flex;align-items:stretch;gap:12px}
+#mesFlow .st{flex:1;border:1.5px solid var(--line);border-radius:12px;padding:10px 14px;background:#fff}
+#mesFlow .st.w{border-color:#9FD3BC;background:#F2FAF6}
+#mesFlow .st b{display:block;font-size:17px;font-weight:900}
+#mesFlow .st small{display:block;font-size:13px;color:var(--sub);font-weight:700;margin-top:2px}
+#mesFlow .st.side{flex:none;width:210px;background:#F7F8FA}
+#mesFlow .ar{display:flex;align-items:center;gap:10px;padding:5px 0 5px 22px;font-size:13px;font-weight:800;color:var(--sub)}
+#mesFlow .ar:before{content:'↓';font-size:20px;color:var(--faint)}
+#mesFlow .chip{display:inline-block;padding:3px 9px;border-radius:999px;background:#111;color:#fff;font-size:12.5px;font-weight:800}
+#mesFlow .chip.r{background:#fff;color:#111;border:1.5px solid #111}
+#mesFlow .side2{display:flex;flex-direction:column;justify-content:center;gap:6px;font-size:12.5px;font-weight:800;color:var(--sub);flex:none;width:150px}
+#mesFlow .how{width:330px;flex:none;display:flex;flex-direction:column;gap:12px}
+#mesFlow .how ol{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px}
+#mesFlow .how li{display:flex;gap:10px;font-size:15px;font-weight:700;line-height:1.45;background:#F7F8FA;border-radius:12px;padding:12px 14px}
+#mesFlow .how li em{flex:none;width:24px;height:24px;border-radius:50%;background:var(--blue);color:#fff;font-style:normal;font-size:13px;font-weight:900;display:flex;align-items:center;justify-content:center}
+#mesFlow .how .go{margin-top:auto;height:64px;border:0;border-radius:14px;background:var(--blue);color:#fff;font-size:22px;font-weight:900}
+#mesFlow .how .note{font-size:13px;color:var(--faint);font-weight:700}
+@media (max-width:900px){ #mesFlow .box{flex-direction:column;padding:16px} #mesFlow .how{width:auto} #mesFlow .st.side,#mesFlow .side2{display:none} }
 /* 좁은 화면(카톡으로 폰에서 열 때) — 기준은 갤럭시탭 1280×800, 폰은 '볼 수만 있게' */
 @media (max-width:900px){
   #mesBar{overflow-x:auto;gap:6px;padding:0 8px} #mesBar .mt button{padding:6px 8px;font-size:13px}
@@ -13568,7 +13607,7 @@ document.body.insertAdjacentHTML('afterbegin',
   '<div id="mesBar"><b>시연 · 저장 안 됨</b>'
   +'<div class="mt"><button data-mode="현장">현장</button><button data-mode="물류">물류 입고</button><button data-mode="구매">구매부 원단 입고</button></div>'
   +'<select id="mesSt" title="어느 작업대 태블릿인지">'+작업대들().map(([p,m])=>'<option value="'+esc(p)+'">작업대 · '+esc(m)+'</option>').join('')+'</select>'
-  +'<span class="sp"></span><button class="mb" id="mesXLb">실적 파일 형식</button><button class="mb hi" id="mesQRb">QR 꺼내기</button><button class="mb" id="mesReset">처음부터</button></div>');
+  +'<span class="sp"></span><button class="mb" id="mesFlowb">흐름 보기</button><button class="mb" id="mesXLb">실적 파일 형식</button><button class="mb hi" id="mesQRb">QR 꺼내기</button><button class="mb" id="mesReset">처음부터</button></div>');
 document.body.insertAdjacentHTML('beforeend',
   '<div id="mes"><div class="mh"><span class="ms" id="mesNo"></span><h2 id="mesT"></h2></div><div class="mbd" id="mesB"></div><div class="mf" id="mesF"></div></div>'
   +'<div id="mesQRp"><div class="ph"><h3>QR 꺼내기</h3><button id="mesQRx">닫기</button></div>'
@@ -13837,7 +13876,7 @@ function 작업대(p){
 }
 $('mesSt').onchange=e=>작업대(e.target.value);
 $('mesReset').onclick=async()=>{ if(!(await 물어보기('시연 기록을 다 지우고 처음부터?','처음부터',true))) return;
-  try{ localStorage.removeItem(MK); localStorage.removeItem(KEY); }catch(e){} location.reload(); };
+  try{ localStorage.removeItem(MK); localStorage.removeItem(KEY); localStorage.removeItem('MES데모.봄'); }catch(e){} location.reload(); };
 
 function 시연스캔(v){
   $('mesQRp').classList.remove('on');
@@ -13878,6 +13917,54 @@ function 실적표(p){
 $('mesXLb').onclick=()=>실적표();
 $('mesXLt').addEventListener('click',e=>{ const b=e.target.closest('[data-xp]'); if(b) 실적표(b.dataset.xp); });
 $('mesXLx').onclick=()=>$('mesXL').classList.remove('open');
+
+// ── 처음 보는 사람용 ① 단계 띠: 지금 있는 단계에 불이 들어온다 ──────────────────
+//    (유저 2026-10-21: "지금 이대로만 보면 처음 본다고 할 때 알아보기 어려울 것 같아서")
+const 단계표 = [
+  ['구매부'], ['00','원단 입고','구매'],
+  ['현장'], ['01','지시서'], ['02','원단'], ['03','시작'], ['04','완료'], ['05 · 06','라벨 2장'], ['07','이동라벨 스캔'], ['09','제품 라벨'],
+  ['물류'], ['10','입고','물류'],
+];
+$('mesBar').insertAdjacentHTML('afterend','<div id="mesSteps">'+단계표.map(x=>x.length===1
+    ? '<span class="grp">'+esc(x[0])+'</span>'
+    : '<button data-step="'+esc(x[0])+'" data-to="'+(x[2]||'현장')+'"><b>'+esc(x[0])+'</b>'+esc(x[1])+'</button>').join('')+'</div>');
+$('mesSteps').addEventListener('click',e=>{ const b=e.target.closest('[data-to]'); if(b) 모드(b.dataset.to); });
+function 지금단계(){
+  if(M.모드==='구매') return ['00']; if(M.모드==='물류') return ['10'];
+  if(지금화면) return [지금화면];
+  if(S.모드==='시작') return ['03']; if(S.모드==='완료'||S.모드==='수정') return ['04'];
+  return null;   // 대기 — 다음에 할 일(01 · 07)만 테두리
+}
+setInterval(()=>{ const 지금=지금단계();
+  document.querySelectorAll('#mesSteps [data-step]').forEach(b=>{ const k=b.dataset.step;
+    b.classList.toggle('on', !!지금&&지금.includes(k)); b.classList.toggle('next', !지금&&(k==='01'||k==='07')); }); }, 300);
+
+// ── 처음 보는 사람용 ② 흐름 안내 화면 — 처음 열 때 한 번 자동, [흐름 보기]로 다시 ─────────
+const 칸 = (제목, 설명, 녹색) => '<div class="st'+(녹색?' w':'')+'"><b>'+제목+'</b><small>'+설명+'</small></div>';
+const 화살 = (라벨, 둘째) => '<div class="ar"><span class="chip">'+라벨+'</span>'+(둘째||'')+'</div>';
+document.body.insertAdjacentHTML('beforeend','<div id="mesFlow" class="ov"><div class="box"><div class="fl">'
+  +'<h3>현장 라벨 흐름</h3><div class="sub">QR을 찍고 → 입력하고 → 라벨을 뽑아 다음 공정으로 넘깁니다.</div>'
+  +'<div class="row">'+칸('구매부 · 원단 입고','00 원단을 받아 원단 표시라벨 출력')+'<div class="side2">원단 표시라벨 →</div>'+'<div class="st side"><b>원단 재고</b><small>라벨 붙은 원단 롤</small></div></div>'
+  +화살('원단 롤','첫 공정이 원단 라벨을 찍어 씀')
+  +'<div class="row">'+칸('첫 공정 · 플렉소','01 지시서 QR → 02 원단 QR → 03 시작 → 04 완료 → 05·06 라벨 2장',1)
+    +'<div class="side2">→ 남은 원단<br><span class="chip r">원단 표시라벨</span><br>다시 원단 재고로</div></div>'
+  +화살('작업공정이동라벨','반제품에 붙임 · 다음 공정에서 떼어 찍음')
+  +'<div class="row">'+칸('중간 공정 · 타발 (공정 수만큼 반복)','07 이동라벨 QR → 03 시작 → 04 완료 → 05 이동라벨',1)+'</div>'
+  +화살('작업공정이동라벨')
+  +'<div class="row">'+칸('마지막 공정 · 재단(슬리터)','07 이동라벨 QR → 03 · 04 → 09 제품 표시라벨 (지시보다 많으면 재고라벨)',1)+'</div>'
+  +화살('제품 표시라벨 · 재고라벨')
+  +'<div class="row">'+칸('물류 · 입고','10 라벨 QR → 보관 위치 → 입고')+'</div>'
+  +'</div><div class="how"><h3>이렇게 눌러 보세요</h3><ol>'
+  +'<li><em>1</em><span>오른쪽 위 <b>[QR 꺼내기]</b>에서 작업지시서를 누르면 스캐너로 찍은 것과 같습니다.</span></li>'
+  +'<li><em>2</em><span>공정이 끝나면 라벨이 나옵니다. 위쪽 <b>[작업대]</b>를 다음 공정으로 바꾸고, [QR 꺼내기]에서 방금 뽑은 이동라벨을 누릅니다.</span></li>'
+  +'<li><em>3</em><span>지금 어느 단계인지는 위쪽 <b>단계 띠</b>에 파랗게 표시됩니다. <b>[실적 파일 형식]</b>은 입력한 값이 기존 생산실적 엑셀 어느 칸에 들어가는지 보여 줍니다.</span></li>'
+  +'</ol><div class="note">데이터는 전부 시연용 가짜입니다. 저장해도 어디로도 보내지 않습니다.</div>'
+  +'<button class="go" id="mesFlowx">시작하기</button></div></div></div>');
+const 흐름열기 = () => $('mesFlow').classList.add('open');
+$('mesFlowb').onclick=흐름열기;
+$('mesFlowx').onclick=()=>{ $('mesFlow').classList.remove('open'); try{ localStorage.setItem('MES데모.봄','1'); }catch(e){} };
+let 봤나=false; try{ 봤나=!!localStorage.getItem('MES데모.봄'); }catch(e){}
+if(!봤나) 흐름열기();
 
 // ── 시작: 처음 열면 작업대를 플렉소 1호기로 맞춰 둔다(설정 화면부터 보이지 않게) ──
 if(!S.작업자||$('setup').classList.contains('open')) 작업대('플렉소'); else $('mesSt').value=S.공정;
