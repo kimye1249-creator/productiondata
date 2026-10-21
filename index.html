@@ -120,9 +120,10 @@
   #numval.empty{color:#C6CDD6}
   #numprev{font-size:17px;color:var(--sub);font-weight:700;text-align:right}
   #numprev b{color:var(--blue)}
-  #numpad{width:420px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  #numpad{width:420px;display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:minmax(52px,82px);gap:12px;height:100%;max-height:458px;align-content:start}
+  #numpad{grid-template-rows:repeat(5,minmax(52px,1fr))}   /* 5줄이 남은 높이를 나눠 갖는다 — 위에 띠가 붙어도 ✔ 줄이 안 잘린다 */
   #numpad .ok{grid-column:span 2}
-  #numpad button{height:82px;border:1.5px solid var(--line);border-radius:16px;background:#fff;font-size:32px;font-weight:800}   /* 5줄이 1280×800 에 들어가야 ✔ 가 안 잘린다 */
+  #numpad button{height:auto;max-height:82px;border:1.5px solid var(--line);border-radius:16px;background:#fff;font-size:32px;font-weight:800}
   #numpad button:active{background:#E9EFF9}
   #numpad .ok{background:var(--blue);color:#fff;border-color:var(--blue);font-size:26px}
   #numpad .del{color:var(--danger)}
@@ -290,6 +291,7 @@
   .chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
   /* 자유 숫자칸 위에 깔리는 "자주 쓰는 값" 버튼 — 대부분은 여기서 한 번에 끝난다 */
   .quick{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px}
+  #numleft .quick{margin:6px 0 0;justify-content:flex-end}
   .quick button{min-width:92px;height:62px;padding:0 16px;border:1.5px solid var(--line);border-radius:14px;background:var(--pick);color:var(--blue);font-size:26px;font-weight:800}
   .quick button:active{background:var(--blue);color:#fff}
   .warn{color:var(--danger);font-weight:800}
@@ -10749,9 +10751,11 @@ function 질문그리기(){
   } else if(f.kind==='num'||S.직접){
     // 🔴 자유 숫자칸도 자주 쓰는 값은 버튼으로 — 플렉소 실린더 상위 8개가 67%, 피딩갭 78%를 덮는다(실측).
     const 자주=(!S.직접&&f.opts&&f.opts.length?f.opts.slice(0,8):[]);
-    body=(자주.length?'<div class="quick">'+자주.map(x=>'<button data-pick="'+esc(x)+'">'+esc(x)+'</button>').join('')+'</div>':'')
-        +'<div id="num"><div id="numleft"><div id="numval" class="'+(v?'':'empty')+'">'+(v||'0')+'</div>'
-        +(prev!=null?'<div id="numprev">직전 <b>'+esc(prev)+'</b></div>':'')+'</div>'+숫자패드()+'</div>';
+    // 🔴 버튼 줄은 숫자 표시 **아래(왼쪽 빈 칸)** 에 — 패드 위에 얹었더니 태블릿 1280×800 에서 81px 넘쳐 ✔ 줄이 잘렸다(10/21 실측)
+    body='<div id="num"><div id="numleft"><div id="numval" class="'+(v?'':'empty')+'">'+(v||'0')+'</div>'
+        +(prev!=null?'<div id="numprev">직전 <b>'+esc(prev)+'</b></div>':'')
+        +(자주.length?'<div class="quick">'+자주.map(x=>'<button data-pick="'+esc(x)+'">'+esc(x)+'</button>').join('')+'</div>':'')
+        +'</div>'+숫자패드()+'</div>';
   } else if(f.kind==='search'){
     body='<div id="srch"><input id="srchin" value="'+esc(v||'')+'" placeholder="A-0" autocomplete="off"><div id="srchlist" class="grid c4"></div></div>';
   } else {
@@ -10772,7 +10776,7 @@ function 질문그리기(){
   }
 }
 const 숫자패드 = () => '<div id="numpad"><button>1</button><button>2</button><button>3</button><button>4</button><button>5</button><button>6</button>'
-  +'<button>7</button><button>8</button><button>9</button><button class="del">⌫</button><button>0</button><button class="dot">.</button><button class="ok">✔</button></div>';
+  +'<button>7</button><button>8</button><button>9</button><button class="del">⌫</button><button>0</button><button class="pt">.</button><button class="ok">✔</button></div>';
 // 유실: 사유 버튼 → 분 → 목록에 쌓임 → [다음]
 function 유실그리기(){
   const list=S.값.유실||[];
@@ -10821,7 +10825,8 @@ $('qbody').addEventListener('click',e=>{
       if(f.kind==='loss'){ if(숫자입력!==''){ (S.값.유실=S.값.유실||[]).push({코드:S.유실선택.코드,이름:S.유실선택.이름,시트:S.유실선택.시트,분:숫자입력}); } S.유실선택=null; 유실그리기(); return; }
       if(숫자입력!=='') S.값[K(f)]=f.시각?시각정규화(숫자입력):숫자입력; else if(!S.값[K(f)]&&S.모드==='시작'&&S.유지[K(f)]!=null) S.값[K(f)]=S.유지[K(f)]; 다음(); return; }
     if(b.classList.contains('del')){ if(숫자입력===''&&S.값[K(f)]!=null) 숫자입력=String(S.값[K(f)]); 숫자입력=숫자입력.slice(0,-1); }
-    else if(b.classList.contains('dot')){ if(!숫자입력.includes('.')) 숫자입력=(숫자입력||'0')+'.'; }
+    else if(b.classList.contains('pt')){   // 'dot' 은 상단 연결 점(12px 동그라미)과 이름이 겹쳐 키가 찌그러졌다(10/21)
+       if(!숫자입력.includes('.')) 숫자입력=(숫자입력||'0')+'.'; }
     else 숫자입력=(숫자입력+b.textContent).slice(0,8);
     const nv=$('numval'); nv.textContent=숫자입력||'0'; nv.className=숫자입력?'':'empty'; return; }
   const r=e.target.closest('[data-go]'); if(r){ S.고침=true; S.i=+r.dataset.go; 질문그리기(); }
