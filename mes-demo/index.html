@@ -13388,8 +13388,8 @@ var qrcode = function() {
 // 🔴 이 파일은 **site/mes-demo/ 에만** 들어간다(build.py). 현장 실사용 앱(실적단말기)에는 없다.
 //    기준: 테블릿 스캐너 배치/보고서/워크플로우/MES-현장-워크플로우_인수인계.md (2026-10-21)
 //    03~04(시작·완료 입력)는 실적단말기를 그대로 쓰고, 그 앞뒤만 붙인다:
-//      00 구매부 원단 입고 · 01 오더 확인 · 02 원단 스캔 · [03 시작 · 04 완료] · 05 라벨 출력
-//      06 남은 원단 라벨 · 07 앞 공정 라벨 스캔 · 09 재단(완제품·재고 라벨) · 10 물류 입고
+//      00 구매부 원단 입고 · 01 오더 확인 · 02 원단 스캔 · [03 시작 · 04 완료]
+//      05·06 라벨 두 장(작업공정이동라벨 + 남은 원단 표시라벨) · 07 이동라벨 스캔 · 09 재단(제품 표시라벨) · 10 물류 입고
 //    화면 머리의 번호는 워크플로우 표(§3)의 단계 번호와 같다 — DK가 문서와 맞춰 볼 수 있게.
 // 🔴 데이터는 전부 **가짜**다(인수인계 §9: 실적 데이터는 사내에만). 지시서·원단·위치 모두 지어낸 값.
 // ⚠️ 라벨 크기·항목은 디자인팀 확인 중 → 미리보기는 임시 양식. 프린터는 연결하지 않는다(§5에서 DK와 정할 일).
@@ -13508,6 +13508,14 @@ const css = `
 .lab .lqr{width:112px;flex:none}
 .lab .lqr svg{width:112px;height:112px;display:block}
 .lab.dim{opacity:.45}
+.lab .lcut{margin:10px -16px -14px;padding:7px 16px;border-top:2px dashed #111;font-size:14px;font-weight:800;color:#111}
+.lab .lnone{margin-top:8px;font-size:14px;font-weight:800;color:var(--warn)}
+.labs.n3{grid-template-columns:1fr 1fr 1fr} .labs.n3 .lab{padding:10px 12px} .labs.n3 .lab .lo{font-size:20px} .labs.n3 .lab .lq{font-size:18px} .labs.n3 .lab .lqr,.labs.n3 .lab .lqr svg{width:70px;height:70px}
+#mes .mrows.tight .mrow{padding:7px 0;font-size:19px}
+#mes .mval.off{color:var(--faint);font-size:28px}
+#mes .mval.sm{font-size:38px;padding:6px 16px} #mes .mpad.sm button{height:58px;font-size:26px}
+#mes .step.sm button{width:58px;height:58px;font-size:26px} #mes .step.sm b{font-size:32px;min-width:50px}
+#mes .fhint{align-self:center;margin-left:auto;font-size:16px;font-weight:800;color:var(--warn)} #mes .fhint+.go{margin-left:12px}
 .labs{display:grid;gap:14px} .labs.n2{grid-template-columns:1fr 1fr} .labs.n2 .lab .lqr,.labs.n2 .lab .lqr svg{width:92px;height:92px}
 /* QR 꺼내기(시연 도우미) */
 #mesQRp{position:fixed;top:112px;right:0;bottom:0;width:420px;background:#fff;border-left:1px solid var(--line);box-shadow:-10px 0 30px rgba(0,0,0,.12);z-index:80;display:none;flex-direction:column}
@@ -13562,7 +13570,7 @@ document.body.insertAdjacentHTML('beforeend',
   +'<div class="pn">스캐너 대신 누르세요. 현장에선 USB 스캐너로 라벨을 찍습니다.</div><div class="pb" id="mesQRl"></div></div>'
   +'<div id="mesXL" class="ov"><div class="box"><h3 id="mesXLt"></h3><p>입력한 값이 <b>기존 생산실적 엑셀과 같은 열 순서</b>로 나옵니다. 회색 = 엑셀 수식 칸(입력 안 함). 파란 칸 = 이 화면에서 들어간 값.</p>'
   +'<div class="tw" id="mesXLw"></div><div class="row"><button id="mesXLx">닫기</button></div></div></div>');
-$('scan').insertAdjacentHTML('afterbegin','<div id="scanHint">작업지시서 · 앞 공정 라벨 QR</div>');
+$('scan').insertAdjacentHTML('afterbegin','<div id="scanHint">작업지시서 · 공정이동라벨 QR</div>');
 
 let 동작={}, 지금화면=null, 스캔받기=null;
 function 그리기(no, 제목, 본문, 아래, 행동, 스캔){
@@ -13582,22 +13590,28 @@ let 패드값='';
 const 패드 = () => '<div class="mpad">'+['1','2','3','4','5','6','7','8','9','⌫','0','✔'].map(k=>'<button data-act="pad" data-k="'+k+'" class="'+(k==='✔'?'ok':'')+'">'+k+'</button>').join('')+'</div>';
 
 // ── 라벨 미리보기 ─────────────────────────────────────────────────────────
+// 🔴 라벨 이름은 현장 말 그대로(유저 2026-10-21):
+//    공정이동 = 작업공정이동라벨 — 다음 공정에서 **떼어서 찍는** 라벨(공정이동전표)
+//    원단     = 원단 표시라벨 — 남은 원단(구매부 입고 원단도 같은 양식)
+//    제품     = 제품 표시라벨 — 마지막 공정(재단)에서. 재고 = 지시보다 더 만든 초과분
 function 라벨(l){
   const 줄=[];
   if(l.종류==='원단'){
     줄.push('<div class="lo">'+esc(l.코드)+'</div>','<div class="lp">'+esc(종류이름(l.코드))+'</div>',
-           '<div class="lq">'+쉼표(l.길이)+' M</div>','<div class="ln">폭 '+esc(l.폭)+' mm</div>');
+           '<div class="lq">'+(l.없음?'—':쉼표(l.길이)+' M')+'</div>','<div class="ln">폭 '+esc(l.폭)+' mm</div>');
     if(l.출처) 줄.push('<div class="ld">남은 원단 · '+esc(l.출처)+'</div>');
   } else {
     줄.push('<div class="lo">'+esc(l.오더)+'</div>','<div class="lp">'+esc(l.품명||'')+'</div>',
            '<div class="lq">'+esc(l.수량글)+'</div>');
-    if(l.종류==='생산품') 줄.push('<div class="ln">다음 → '+esc(l.다음||'—')+'</div>');
-    if(l.종류==='완제품') 줄.push('<div class="ln">'+esc(l.포장||'박스')+'</div>');
-    if(l.종류==='재고')   줄.push('<div class="ln">초과 생산분</div>');
+    if(l.종류==='공정이동') 줄.push('<div class="ln">다음 → '+esc(l.다음||'—')+'</div>');
+    if(l.종류==='제품') 줄.push('<div class="ln">'+esc(l.포장||'박스')+'</div>');
+    if(l.종류==='재고') 줄.push('<div class="ln">초과 생산분</div>');
     if(l.시각) 줄.push('<div class="ld">'+esc(l.시각)+'</div>');
   }
   return '<div class="lab'+(l.흐림?' dim':'')+'"><div class="lt"><b>'+esc(l.종류)+'</b><span>'+esc(l.번호)+'</span></div>'
-    +'<div class="lm"><div class="lx">'+줄.join('')+'</div><div class="lqr">'+qr(l.번호)+'</div></div></div>';
+    +'<div class="lm"><div class="lx">'+줄.join('')+'</div><div class="lqr">'+qr(l.번호)+'</div></div>'
+    +(l.종류==='공정이동'?'<div class="lcut">✂ 다음 공정에서 떼어 찍음</div>':'')
+    +(l.없음?'<div class="lnone">남은 원단 없음 · 안 뽑음</div>':'')+'</div>';
 }
 
 // ── 01 · 07 오더 확인 ─────────────────────────────────────────────────────
@@ -13608,6 +13622,7 @@ function 오더확인(ctx){
   const 흐름 = 순서.length ? '<div class="flow">'+순서.map((p,k)=>'<span class="'+(k===i?'now':k<i?'past':'')+'">'+esc(p)+'</span>').join('<i>›</i>')+'</div>' : '';
   const 경고 = !정보 ? '<div class="malert">지시서 정보 없음 · 시연용 지시서가 아님</div>'
              : i<0 ? '<div class="malert">이 지시서에 '+esc(S.공정)+' 없음 · 그래도 진행 가능</div>'
+             : (ctx.앞 && ctx.앞.읽음) ? '<div class="malert">이미 찍은 이동라벨 · '+esc(ctx.앞.읽음.공정)+' '+esc(ctx.앞.읽음.시각)+'</div>'
              : (ctx.앞 && ctx.앞.다음!==S.공정) ? '<div class="malert">라벨의 다음 공정은 '+esc(ctx.앞.다음||'—')+' · 그래도 진행 가능</div>' : '';
   const 본문='<div class="mcol"><div class="ono">'+esc(ctx.오더)+'</div>'+(정보?'<div class="oname">'+esc(정보.품명)+'</div>':'')+흐름+경고
     +'<div class="mrows">'
@@ -13646,6 +13661,7 @@ function 시작진행(ctx){
   닫기(); 시작시작(ctx.오더);
   if(S.모드!=='시작'||$('attach').classList.contains('open')) return;   // 같은 설비에 진행 중 → 기존 '동시작업/먼저 완료' 창
   S.값._오더=ctx.오더; if(ctx.앞) S.값._앞=ctx.앞; if(ctx.원단) S.값._원단=ctx.원단;
+  if(ctx.앞&&M.라벨[ctx.앞.번호]&&!M.라벨[ctx.앞.번호].읽음){ M.라벨[ctx.앞.번호].읽음={공정:S.공정, 시각:지금글()}; 남기기(); }   // 떼어서 찍은 이동라벨
   if(ctx.원단){
     S.값['원단정보 원단코드']=ctx.원단.코드; S.값['원단정보 규격(너비)']=String(ctx.원단.폭);
     S.단계=S.단계.filter(f=>!/^원단정보/.test(f.name)); S.i=0; 질문그리기();
@@ -13679,60 +13695,67 @@ function 실적(행){
   return k ? {수:+행[k], 글:쉼표(행[k])+' '+(단위(k)||''), 단위:단위(k)} : {수:0, 글:'—', 단위:''};
 }
 
-// ── 05 라벨 출력 / 09 재단: 완제품 + 초과분 재고 ─────────────────────────────
+// ── 05·06 라벨 출력 — 공정이 끝나면 **두 장**: 작업공정이동라벨 + 남은 원단 표시라벨 ─────
+//    (유저 2026-10-21: "라벨 두 개 뽑아야 하는 거 몰랐어?" — 전엔 화면을 둘로 나눠 따로 뽑았고,
+//     원단을 안 찍으면 남은 원단 라벨은 아예 건너뛰었다.) 한 화면에서 같이 보고 같이 뽑는다.
+// ── 09 재단(마지막 공정) — 제품 표시라벨 + 지시보다 더 만들었으면 초과분 재고라벨 ─────────
 function 라벨화면(ctx){
   const 오더=ctx.행.오더번호, 정보=가짜.지시[오더], 순서=정보?정보.공정:[], i=순서.indexOf(ctx.공정);
   const 마지막 = i>=0 && i===순서.length-1, 다음 = i>=0 ? 순서[i+1] : null, 실=실적(ctx.행);
   const 시각 = ctx.시각 ? 지금글() : '';
   const 불량 = +ctx.값.불량>0 ? ' · 불량 '+쉼표(ctx.값.불량) : '';
-  let 라벨들;
+  const w = ctx.값._원단;                         // 이 공정에서 찍은 원단 — 있으면 남은 원단 라벨도 뽑는다
+  if(ctx.남은==null){ ctx.남은=''; ctx.원단없음=false; 패드값=''; }
+  let 주;
   if(마지막){
     const 지시=정보.지시, 완=Math.min(실.수,지시), 초과=실.수-지시;
-    라벨들=[{종류:'완제품', 접두:'G', 수량:완, 수량글:쉼표(완)+' '+정보.단위, 포장:ctx.포장}];
-    if(초과>0) 라벨들.push({종류:'재고', 접두:'S', 수량:초과, 수량글:쉼표(초과)+' '+정보.단위, 매수:1});
-  } else 라벨들=[{종류:'생산품', 접두:'P', 수량:실.수, 수량글:실.글, 다음}];
-  const 미리 = 라벨들.map(l=>Object.assign({오더, 품명:정보?정보.품명:'', 시각, 번호:다음번호(l.접두)},l));
-  const 위 = '<div class="mrows"><div class="mrow"><b>오더</b><span>'+esc(오더)+(정보?' · '+esc(정보.품명):'')+'</span></div>'
-    +'<div class="mrow"><b>실적</b><span>'+esc(실.글)+esc(불량)+'</span></div>'
-    +(마지막?'<div class="mrow"><b>지시</b><span>'+쉼표(정보.지시)+' '+esc(정보.단위)+(실.수>정보.지시?' · 초과 '+쉼표(실.수-정보.지시):'')+'</span></div>'
-            :'<div class="mrow"><b>다음</b><span>'+esc(다음||'—')+'</span></div>')+'</div>';
+    주=[{종류:'제품', 접두:'G', 수량:완, 수량글:쉼표(완)+' '+정보.단위, 포장:ctx.포장}];
+    if(초과>0) 주.push({종류:'재고', 접두:'S', 수량:초과, 수량글:쉼표(초과)+' '+정보.단위});
+  } else 주=[{종류:'공정이동', 접두:'P', 수량:실.수, 수량글:실.글, 다음}];
+  const 미리 = 주.map(l=>Object.assign({오더, 품명:정보?정보.품명:'', 시각, 번호:다음번호(l.접두)},l));
+  const 원단라벨 = w ? {종류:'원단', 번호:다음번호('R'), 코드:w.코드, 폭:w.폭, 길이:+ctx.남은||0, 출처:w.번호,
+                         흐림:!ctx.남은||ctx.원단없음, 없음:ctx.원단없음} : null;
+  const 원단준비 = !w || ctx.원단없음 || +ctx.남은>0;
+  const 장 = ctx.매수 + (주.length>1?1:0) + (w&&!ctx.원단없음&&+ctx.남은>0?1:0);
+  const 위 = '<div class="mrows tight"><div class="mrow"><b>오더</b><span>'+esc(오더)+(정보?' · '+esc(정보.품명):'')+'</span></div>'
+    +(마지막?'<div class="mrow"><b>실적</b><span>'+esc(실.글)+esc(불량)+'</span></div>'
+            +'<div class="mrow"><b>지시</b><span>'+쉼표(정보.지시)+' '+esc(정보.단위)+(실.수>정보.지시?' · 초과 '+쉼표(실.수-정보.지시):'')+'</span></div>'
+            :'<div class="mrow"><b>실적</b><span>'+esc(실.글)+esc(불량)+' · 다음 → '+esc(다음||'—')+'</span></div>')+'</div>';
+  // 남은 원단: 빠른 값·[없음]은 라벨 밑에, 길이 표시는 오른쪽 숫자패드 위에(1280×800 한 화면에 들어가게)
+  const 남은줄 = w ? '<div class="lab2">남은 원단 — 쓴 원단 '+esc(w.번호)+' · '+esc(w.코드)+' '+esc(종류이름(w.코드))+' · '+쉼표(w.길이)+' M · 재는 방법 미정</div>'
+      +'<div class="opts">'+[200,500,1000].map(x=>'<button data-act="q" data-v="'+x+'" class="'+(String(ctx.남은)===String(x)&&!ctx.원단없음?'on':'')+'">'+x+'</button>').join('')
+      +'<button data-act="none" class="'+(ctx.원단없음?'on':'')+'">없음</button></div>' : '';
   const 옆 = (마지막?'<div class="lab2">포장</div><div class="opts">'+['박스','롤'].map(x=>'<button data-act="pk" data-v="'+x+'" class="'+(ctx.포장===x?'on':'')+'">'+x+'</button>').join('')+'</div>':'')
-    +'<div class="lab2">매수</div><div class="step"><button data-act="minus">−</button><b>'+ctx.매수+'</b><button data-act="plus">+</button></div>'
+    +'<div class="lab2">'+(마지막?'제품':'공정이동')+' 라벨 매수</div><div class="step'+(w?' sm':'')+'"><button data-act="minus">−</button><b>'+ctx.매수+'</b><button data-act="plus">+</button></div>'
     +'<label class="tog"><input type="checkbox" data-act="tm"'+(ctx.시각?' checked':'')+'> 완료 시각 표기</label>'
-    +'<div class="note">라벨 크기·항목은 디자인팀 확인 중 · 임시 양식</div>';
-  그리기(마지막?'09':'05', 마지막?'완제품 · 재고 라벨':'생산품 라벨',
-    '<div class="mcol">'+위+'<div class="labs n'+미리.length+'">'+미리.map(라벨).join('')+'</div></div><div class="mside">'+옆+'</div>',
-    '<button class="nav" data-act="later">출력 안 함</button><button class="go print" data-act="print">출력 '+(ctx.매수+(라벨들.length>1?1:0))+'장</button>',
+    +(w?'<div class="mval sm'+(ctx.원단없음?' off':'')+'">'+(ctx.원단없음?'남은 원단 없음':'남은 '+(ctx.남은?쉼표(ctx.남은):'0')+'<small>M</small>')+'</div>'+패드().replace('class="mpad"','class="mpad sm"')
+       :'<div class="note">라벨 크기·항목은 디자인팀 확인 중 · 임시 양식</div>');
+  const 라벨칸 = [...미리, ...(원단라벨?[원단라벨]:[])];
+  그리기(마지막?'09':(w?'05 · 06':'05'), 마지막?'제품 표시라벨':(w?'라벨 출력 — 공정이동 · 남은 원단':'작업공정이동라벨'),
+    '<div class="mcol">'+위+'<div class="labs n'+라벨칸.length+'">'+라벨칸.map(라벨).join('')+'</div>'+남은줄+'</div><div class="mside">'+옆+'</div>',
+    '<button class="nav" data-act="later">출력 안 함</button>'
+      +(원단준비?'':'<span class="fhint">남은 원단 길이 · 없으면 [없음]</span>')
+      +'<button class="go print" data-act="print"'+(원단준비?'':' disabled')+'>출력 '+장+'장</button>',
     { pk:b=>{ ctx.포장=b.dataset.v; 라벨화면(ctx); },
       minus:()=>{ if(ctx.매수>1){ ctx.매수--; 라벨화면(ctx); } }, plus:()=>{ if(ctx.매수<20){ ctx.매수++; 라벨화면(ctx); } },
       tm:b=>{ ctx.시각=b.checked; 라벨화면(ctx); },
-      later:()=>남은원단(ctx),
-      print:()=>{
-        let 장=0;
-        미리.forEach((l,k)=>{ const 번호=새번호(l.접두); M.라벨[번호]=Object.assign({},l,{번호, 공정:ctx.공정, 매수:k===0?ctx.매수:1, 출력:지금글()}); 장+=k===0?ctx.매수:1; });
-        남기기(); toast('출력 '+장+'장 · 시연(프린터 연결 전)'); 남은원단(ctx); } });
-}
-
-// ── 06 남은 원단 라벨 — 남은 길이(M) → 새 원단 라벨, 원단 재고로 ─────────────
-function 남은원단(ctx){
-  const w=ctx.값._원단;
-  if(!w){ 닫기(); 스캔화면(); return; }
-  if(ctx.남은==null){ ctx.남은=''; 패드값=''; }
-  const 새 = {종류:'원단', 번호:다음번호('R'), 코드:w.코드, 폭:w.폭, 길이:+ctx.남은||0, 출처:w.번호, 흐림:!ctx.남은};
-  그리기('06','남은 원단 라벨',
-    '<div class="mcol"><div class="mrows"><div class="mrow"><b>쓴 원단</b><span>'+esc(w.번호)+' · '+esc(w.코드)+' '+esc(종류이름(w.코드))+' · '+쉼표(w.길이)+' M</span></div></div>'
-      +'<div class="mprompt">남은 길이는?</div><div class="vrow"><div class="mval">'+(ctx.남은?쉼표(ctx.남은):'0')+'<small>M</small></div>'
-      +'<div class="opts">'+[200,500,1000].map(x=>'<button data-act="q" data-v="'+x+'">'+x+'</button>').join('')+'</div></div>'+라벨(새)+'</div>'
-      +'<div class="mside">'+패드()+'<div class="note">남은 길이를 재는 방법은 아직 미정</div></div>',
-    '<button class="nav" data-act="none">남은 원단 없음</button><button class="go print" data-act="print"'+(ctx.남은?'':' disabled')+'>출력 1장</button>',
-    { q:b=>{ ctx.남은=b.dataset.v; 패드값=''; 남은원단(ctx); },
+      q:b=>{ ctx.남은=b.dataset.v; ctx.원단없음=false; 패드값=''; 라벨화면(ctx); },
+      none:()=>{ ctx.원단없음=!ctx.원단없음; if(ctx.원단없음){ ctx.남은=''; 패드값=''; } 라벨화면(ctx); },
       pad:b=>{ const k=b.dataset.k;
-        if(k==='✔'){ if(ctx.남은) 동작.print(); return; }
+        if(k==='✔'){ if(원단준비) 동작.print(); return; }
         if(k==='⌫') 패드값=(패드값||String(ctx.남은||'')).slice(0,-1); else 패드값=(패드값+k).slice(0,6);
-        ctx.남은=패드값; 남은원단(ctx); },
-      none:()=>{ if(M.원단[w.번호]) M.원단[w.번호].다씀=true; 남기기(); 닫기(); 스캔화면(); toast('원단 다 씀'); },
-      print:()=>{ const 번호=새번호('R'); M.원단[번호]={코드:w.코드, 폭:w.폭, 길이:+ctx.남은, 출처:w.번호};
-        if(M.원단[w.번호]) M.원단[w.번호].다씀=true; 남기기(); 닫기(); 스캔화면(); toast('원단 라벨 '+번호+' 출력 · 시연'); } });
+        ctx.남은=패드값; ctx.원단없음=false; 라벨화면(ctx); },
+      later:()=>{ 닫기(); 스캔화면(); },
+      print:()=>{
+        if(!원단준비) return;
+        let 장수=0;
+        미리.forEach((l,k)=>{ const 번호=새번호(l.접두), 매=k===0?ctx.매수:1;
+          M.라벨[번호]=Object.assign({},l,{번호, 공정:ctx.공정, 매수:매, 출력:지금글()}); 장수+=매; });
+        if(w){
+          if(!ctx.원단없음&&+ctx.남은>0){ const 번호=새번호('R'); M.원단[번호]={코드:w.코드, 폭:w.폭, 길이:+ctx.남은, 출처:w.번호}; 장수++; }
+          if(M.원단[w.번호]) M.원단[w.번호].다씀=true;
+        }
+        남기기(); 닫기(); 스캔화면(); toast('출력 '+장수+'장 · 시연(프린터 연결 전)'); } });
 }
 
 // ── 스캔 길: 지시서(10자리) · 앞 공정 라벨(P-) 은 오더 확인으로, 나머지는 안내 ──
@@ -13743,7 +13766,7 @@ window.QR입력 = function(raw){
   const 안내 = t => { m.textContent=t; m.className='err'; return false; };
   if(/^[PGSR]-\d{4}$/.test(v)){
     if(v[0]==='R') return 안내('원단 라벨은 시작 전에 찍습니다');
-    if(v[0]!=='P') return 안내('완제품·재고 라벨은 물류 입고에서 찍습니다');
+    if(v[0]!=='P') return 안내('제품·재고 라벨은 물류 입고에서 찍습니다');
     const lab=M.라벨[v]; if(!lab) return 안내('라벨 없음 · '+v);
     const k=S.진행중.findIndex(j=>j.오더들.includes(lab.오더)); if(k>=0){ 완료시작(k); return true; }
     오더확인({오더:lab.오더, 앞:lab}); return true;
@@ -13759,7 +13782,7 @@ function 물류화면(){
   const l=물류.라벨, 오늘=M.입고.slice(0,8);
   그리기('10','물류 입고',
     // 위치 버튼이 이 화면의 주인공 — 스캔 칸 바로 아래. 라벨은 확인용이라 오른쪽으로(1280×800 에서 잘렸다)
-    '<div class="mcol"><div class="mprompt">완제품 · 재고 라벨 QR을 찍으세요.</div>'+스캔칸('라벨')
+    '<div class="mcol"><div class="mprompt">제품 · 재고 라벨 QR을 찍으세요.</div>'+스캔칸('라벨')
       +(l?'<div class="lab2">보관 위치</div><div class="opts">'+가짜.위치.map(x=>'<button data-act="loc" data-v="'+x+'" class="'+(물류.위치===x?'on':'')+'">'+x+'</button>').join('')+'</div>':'')
       +'</div><div class="mside">'+(l?라벨(l):'')+'<div class="lab2">오늘 입고 '+M.입고.length+'</div><div class="list">'
       +(오늘.length?오늘.map(x=>'<div><b>'+esc(x.번호)+'</b><span>'+esc(x.종류)+' · '+esc(x.오더)+'</span><span style="margin-left:auto">'+esc(x.위치)+'</span></div>').join(''):'<div>—</div>')+'</div></div>',
@@ -13769,7 +13792,7 @@ function 물류화면(){
         M.입고.unshift({번호:l.번호, 종류:l.종류, 오더:l.오더, 위치:물류.위치}); 남기기(); toast('입고 · '+물류.위치); 물류={}; 물류화면(); } },
     v=>{ const k=v.toUpperCase(), l=M.라벨[k];
       if(!l) return 알림('라벨 없음 · '+v);
-      if(l.종류==='생산품') return 알림('생산품 라벨 · 다음 공정 '+(l.다음||'—')+'에서 찍습니다');
+      if(l.종류==='공정이동') return 알림('공정이동라벨 · 다음 공정 '+(l.다음||'—')+'에서 찍습니다');
       if(l.입고) return 알림('이미 입고 · '+l.입고.위치);
       물류={라벨:l}; 물류화면(); });
 }
@@ -13824,9 +13847,9 @@ function QR목록(){
   const 줄=(값,제목,설명,쓴)=>'<button class="qi'+(쓴?' used':'')+'" data-q="'+esc(값)+'"><span class="qs">'+qr(값)+'</span><span><b>'+esc(제목)+'</b><small>'+esc(설명)+'</small></span></button>';
   const 라벨들=Object.values(M.라벨);
   $('mesQRl').innerHTML='<h4>작업지시서</h4>'+Object.entries(가짜.지시).map(([k,v])=>줄(k.replace('-',''),k,v.품명+' · '+v.공정.join(' › '))).join('')
-    +'<h4>원단 라벨</h4>'+Object.entries(M.원단).map(([k,v])=>줄(k,k,v.코드+' '+종류이름(v.코드)+' · '+v.폭+'mm · '+쉼표(v.길이)+'M'+(v.출처?' · 남은 원단':''),v.다씀)).join('')
-    +'<h4>생산품 라벨</h4>'+(라벨들.filter(l=>l.종류==='생산품').map(l=>줄(l.번호,l.번호,l.오더+' · '+l.공정+' → '+(l.다음||'—')+' · '+l.수량글)).join('')||'<div class="note">아직 없음 · 공정 완료 후 출력하면 생깁니다</div>')
-    +'<h4>완제품 · 재고 라벨</h4>'+(라벨들.filter(l=>l.종류!=='생산품').map(l=>줄(l.번호,l.번호,l.종류+' · '+l.오더+' · '+l.수량글+(l.입고?' · 입고 '+l.입고.위치:''),!!l.입고)).join('')||'<div class="note">아직 없음 · 마지막 공정(슬리터) 완료 후 생깁니다</div>');
+    +'<h4>원단 표시라벨</h4>'+Object.entries(M.원단).map(([k,v])=>줄(k,k,v.코드+' '+종류이름(v.코드)+' · '+v.폭+'mm · '+쉼표(v.길이)+'M'+(v.출처?' · 남은 원단':''),v.다씀)).join('')
+    +'<h4>작업공정이동라벨</h4>'+(라벨들.filter(l=>l.종류==='공정이동').map(l=>줄(l.번호,l.번호,l.오더+' · '+l.공정+' → '+(l.다음||'—')+' · '+l.수량글+(l.읽음?' · 찍음':''),!!l.읽음)).join('')||'<div class="note">아직 없음 · 공정 완료 후 출력하면 생깁니다</div>')
+    +'<h4>제품 · 재고 라벨</h4>'+(라벨들.filter(l=>l.종류==='제품'||l.종류==='재고').map(l=>줄(l.번호,l.번호,l.종류+' · '+l.오더+' · '+l.수량글+(l.입고?' · 입고 '+l.입고.위치:''),!!l.입고)).join('')||'<div class="note">아직 없음 · 마지막 공정(재단) 완료 후 생깁니다</div>');
 }
 $('mesQRb').onclick=()=>{ QR목록(); $('mesQRp').classList.toggle('on'); };
 $('mesQRx').onclick=()=>$('mesQRp').classList.remove('on');
